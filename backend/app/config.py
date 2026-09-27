@@ -42,7 +42,13 @@ class Settings:
     # PostgreSQL + pgvector when set; otherwise vectors are stored as local files under data_dir.
     database_url: str | None = field(default_factory=lambda: os.environ.get("DATABASE_URL") or None)
     retrieval_top_k: int = field(default_factory=lambda: _env_int("RETRIEVAL_TOP_K", 5))
+    # Self-correcting retrieval: LLM query rewrites when no passage passes the threshold (0 = off).
+    max_query_rewrites: int = field(default_factory=lambda: _env_int("MAX_QUERY_REWRITES", 1))
     max_upload_mb: int = field(default_factory=lambda: _env_int("MAX_UPLOAD_MB", 20))
+    # Built UI (`npm run build` in frontend/); served at /ui/ when present.
+    frontend_dist: Path = field(
+        default_factory=lambda: Path(os.environ.get("FRONTEND_DIST") or REPO_ROOT / "frontend" / "dist")
+    )
     cost_table_path: Path = field(
         default_factory=lambda: Path(
             os.environ.get("COST_TABLE_PATH") or SAMPLE_DIR / "demo_treatment_costs.csv"

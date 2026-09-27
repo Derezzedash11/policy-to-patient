@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 from fastapi import FastAPI
+from fastapi.responses import RedirectResponse
+from fastapi.staticfiles import StaticFiles
 
 from app.api.routes import router
 from app.config import Settings
@@ -42,7 +44,7 @@ def create_app(
             "Prototype only: outputs are estimates, not "
             "insurance decisions, and cost figures are synthetic."
         ),
-        version="0.2.0",
+        version="0.3.0",
     )
     retriever = VectorRetriever(
         embedder or build_embedder(settings), vector_store or build_vector_store(settings)
@@ -54,4 +56,11 @@ def create_app(
         settings.cost_table_path, settings.cost_modifiers_path
     )
     app.include_router(router)
+    if (settings.frontend_dist / "index.html").is_file():
+        app.mount("/ui", StaticFiles(directory=settings.frontend_dist, html=True), name="ui")
+
+        @app.get("/", include_in_schema=False)
+        def root() -> RedirectResponse:
+            return RedirectResponse("/ui/")
+
     return app

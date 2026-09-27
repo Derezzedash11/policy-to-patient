@@ -82,6 +82,7 @@ class PolicyService:
             self.llm,
             top_k=top_k or self.settings.retrieval_top_k,
             min_score=self.min_evidence_score,
+            max_rewrites=self.settings.max_query_rewrites,
         )
 
 def compute_coverage(request: CoverageRequest, estimator: CostEstimator) -> CoverageResult:

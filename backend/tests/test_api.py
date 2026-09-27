@@ -187,3 +187,18 @@ def test_pgvector_restart_reuses_stored_vectors(tmp_path):
     hits = restarted.post(f"/policies/{doc_id}/search", json={"query": "ambulance charges"}).json()
     assert counting.documents_embedded == 0
     assert hits[0]["section"] == "9. AMBULANCE" and hits[0]["page"] == 1
+
+
+def test_built_frontend_is_served_at_ui(tmp_path):
+    dist = tmp_path / "dist"
+    dist.mkdir()
+    (dist / "index.html").write_text("<!doctype html><title>ui</title>")
+    client = make_client(tmp_path, frontend_dist=dist)
+    assert client.get("/ui/").status_code == 200 and "<title>ui</title>" in client.get("/ui/").text
+    assert client.get("/", follow_redirects=False).headers["location"] == "/ui/"
+    assert client.get("/health").status_code == 200  # API routes unaffected
+
+
+def test_frontend_not_mounted_without_a_build(tmp_path):
+    client = make_client(tmp_path, frontend_dist=tmp_path / "missing")
+    assert client.get("/ui/").status_code == 404

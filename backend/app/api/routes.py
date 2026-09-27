@@ -45,6 +45,7 @@ class Health(BaseModel):
     retrieval: str
     retrieval_is_semantic: bool
     min_evidence_score: float
+    max_query_rewrites: int
     cost_estimator: str
 
 
@@ -58,6 +59,7 @@ def health(request: Request) -> Health:
         retrieval=service.retriever.name,
         retrieval_is_semantic=service.retriever.is_semantic,
         min_evidence_score=service.min_evidence_score,
+        max_query_rewrites=service.settings.max_query_rewrites,
         cost_estimator="synthetic demo table",
     )
 

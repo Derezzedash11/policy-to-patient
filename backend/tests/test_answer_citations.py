@@ -3,7 +3,7 @@ import pytest
 from app.qa.answer import answer_question, extract_citation_labels
 from app.qa.llm import LLMError
 from app.qa.prompt import INSUFFICIENT_MARKER
-from conftest import ConceptEmbedder, StubLLM
+from conftest import ConceptEmbedder, ScriptedLLM, StubLLM
 
 MIN_SCORE = 0.10
 DOC = "testdoc"
@@ -54,15 +54,17 @@ def test_llm_only_sees_retrieved_passages(retriever):
 
 def test_citation_to_unretrieved_passage_is_rejected(retriever):
     res = ask(retriever, StubLLM("The deductible is Rs 10,000 [C1] [C9]."))
-    assert res.status == "insufficient_evidence"
+    assert res.status == "manual_review"
     assert res.answer is None
-    assert "C9" in res.message
+    assert any("C9" in issue for issue in res.verification_issues)
+    assert res.citations  # evidence is still shown for manual review
 
 
 def test_uncited_answer_is_rejected(retriever):
     res = ask(retriever, StubLLM("The deductible is Rs 10,000."))
-    assert res.status == "insufficient_evidence"
+    assert res.status == "manual_review"
     assert res.answer is None
+    assert "Does not cite any provided passage" in res.verification_issues
 
 
 def test_llm_declares_insufficient(retriever):
@@ -74,9 +76,11 @@ def test_llm_declares_insufficient(retriever):
 
 def test_low_relevance_question_is_insufficient_without_calling_llm(retriever):
     llm = StubLLM("should not be used [C1]")
-    res = ask(retriever, llm, "Does the policy cover space tourism?")
+    res = answer_question("Does the policy cover space tourism?", DOC, retriever, llm,
+                          top_k=3, min_score=MIN_SCORE, max_rewrites=0)
     assert res.status == "insufficient_evidence"
     assert llm.calls == []
+    assert [a.strategy for a in res.retrieval_attempts] == ["original"]
 
 
 def test_threshold_is_configurable(retriever):
@@ -120,3 +124,92 @@ def test_only_evidence_above_threshold_is_sent_to_llm(retriever):
     _, user_prompt = llm.calls[0]
     assert all(e.score >= MIN_SCORE for e in res.evidence)
     assert user_prompt.count("] page ") == len(res.evidence)
+
+
+# --------------------------------------------------------------------------- figure verification
+
+
+def test_answer_with_figure_not_in_cited_passage_needs_manual_review(retriever):
+    res = ask(retriever, StubLLM("The deductible is Rs 50,000 per policy year [C1]."))
+    assert res.status == "manual_review"
+    assert res.answer is None
+    assert any("50000 not found in cited passage(s) C1" in i for i in res.verification_issues)
+
+
+def test_figure_formats_are_normalised(retriever):
+    # "10,000" and "10000" are the same figure; "ten" is read as 10.
+    res = ask(retriever, StubLLM("You pay the first Rs 10000 each policy year [C1]. A co-payment of ten percent applies [C1]."))
+    assert res.status == "answered", res.verification_issues
+
+
+def test_sentence_with_figure_but_no_citation_needs_manual_review(retriever):
+    res = ask(retriever, StubLLM("A deductible applies [C1]. It is Rs 10,000."))
+    assert res.status == "manual_review"
+    assert any("without citing" in i for i in res.verification_issues)
+
+
+# --------------------------------------------------------------------------- self-correcting retrieval
+
+PARAPHRASE = "When is childbirth paid for?"  # no content words shared with the maternity passage
+
+
+def test_rewrite_recovers_evidence_and_answer_uses_original_question(retriever):
+    llm = ScriptedLLM("maternity waiting period", "Maternity is covered after 24 months [C1].")
+    res = answer_question(PARAPHRASE, DOC, retriever, llm, top_k=3, min_score=MIN_SCORE)
+    assert [a.strategy for a in res.retrieval_attempts] == ["original", "llm_rewrite"]
+    assert res.retrieval_attempts[0].evidence_found is False
+    assert res.retrieval_attempts[1].query == "maternity waiting period"
+    assert res.retrieval_attempts[1].evidence_found is True
+    assert res.status == "answered"
+    assert res.citations[0].section == "4. WAITING PERIODS"
+    rewrite_call, answer_call = llm.calls
+    assert "Do not answer the question" in rewrite_call[0]
+    assert f"Question: {PARAPHRASE}" in answer_call[1]  # the answer is for the user's question
+    assert "maternity waiting period" not in answer_call[1]
+
+
+def test_rewrite_that_still_finds_nothing_returns_insufficient_evidence(retriever):
+    llm = ScriptedLLM("astronaut training reimbursement")
+    res = answer_question("Is space tourism paid?", DOC, retriever, llm, top_k=3, min_score=MIN_SCORE)
+    assert res.status == "insufficient_evidence"
+    assert len(llm.calls) == 1  # rewrite only; no answer generated without evidence
+    assert len(res.retrieval_attempts) == 2
+    assert "after 1 rewritten query" in res.message
+
+
+def test_rewrites_are_bounded(retriever):
+    llm = ScriptedLLM("space one", "space two", "space three", "space four")
+    res = answer_question("Is space tourism paid?", DOC, retriever, llm, top_k=3,
+                          min_score=MIN_SCORE, max_rewrites=10)
+    assert len(res.retrieval_attempts) == 3  # original + hard cap of 2 rewrites
+    assert res.status == "insufficient_evidence"
+
+
+def test_repeated_or_empty_rewrite_stops_the_loop(retriever):
+    res = answer_question("Is space tourism paid?", DOC, retriever, ScriptedLLM('"Is space tourism paid?"'),
+                          top_k=3, min_score=MIN_SCORE, max_rewrites=2)
+    assert res.retrieval_attempts[-1].note == "no new query produced"
+    assert res.status == "insufficient_evidence"
+
+
+def test_rewrite_failure_is_recorded(retriever):
+    class Failing(StubLLM):
+        def complete(self, system, user):
+            raise LLMError("LLM API error 529: overloaded")
+
+    res = answer_question(PARAPHRASE, DOC, retriever, Failing(""), top_k=3, min_score=MIN_SCORE)
+    assert res.status == "insufficient_evidence"
+    assert "rewrite failed" in res.retrieval_attempts[-1].note
+
+
+def test_no_rewrite_when_first_retrieval_succeeds(retriever):
+    llm = ScriptedLLM("The deductible is Rs 10,000 [C1].")
+    res = ask(retriever, llm)
+    assert [a.strategy for a in res.retrieval_attempts] == ["original"]
+    assert len(llm.calls) == 1
+
+
+def test_no_rewrite_without_llm(retriever):
+    res = answer_question(PARAPHRASE, DOC, retriever, None, top_k=3, min_score=MIN_SCORE, max_rewrites=2)
+    assert res.status == "insufficient_evidence"
+    assert len(res.retrieval_attempts) == 1

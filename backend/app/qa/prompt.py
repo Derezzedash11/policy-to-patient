@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from app.qa.verify import passage_label
 from app.retrieval.base import ScoredChunk
 
 INSUFFICIENT_MARKER = "INSUFFICIENT_EVIDENCE"
@@ -17,10 +18,6 @@ Rules:
 - Do not calculate payouts or out-of-pocket amounts; a separate calculator does that.
 - If the passages do not answer the question, reply with exactly {INSUFFICIENT_MARKER} and nothing else.
 - Keep the answer short: at most a few sentences."""
-
-
-def passage_label(index: int) -> str:
-    return f"C{index + 1}"
 
 
 def build_user_prompt(question: str, evidence: list[ScoredChunk]) -> str:

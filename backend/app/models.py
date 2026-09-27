@@ -63,7 +63,19 @@ class AskRequest(BaseModel):
     top_k: int | None = Field(default=None, ge=1, le=20)
 
 
-AnswerStatus = Literal["answered", "evidence_only", "insufficient_evidence", "llm_error"]
+AnswerStatus = Literal[
+    "answered", "evidence_only", "insufficient_evidence", "manual_review", "llm_error"
+]
+
+
+class RetrievalAttempt(BaseModel):
+    """One retrieval pass. Attempts after the first come from the self-correcting step."""
+
+    query: str
+    strategy: Literal["original", "llm_rewrite"]
+    best_score: float | None = None
+    evidence_found: bool = False
+    note: str | None = None
 
 
 class AskResponse(BaseModel):
@@ -75,6 +87,10 @@ class AskResponse(BaseModel):
     )
     citations: list[Citation] = []
     evidence: list[Evidence] = []
+    retrieval_attempts: list[RetrievalAttempt] = []
+    verification_issues: list[str] = Field(
+        default=[], description="Why a generated answer was not accepted (status manual_review)"
+    )
     message: str
 
 

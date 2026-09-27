@@ -33,6 +33,22 @@ class StubLLM:
         return self.reply
 
 
+class ScriptedLLM:
+    """Returns scripted replies in order (e.g. a query rewrite, then an answer) and records calls."""
+
+    model = "scripted-llm"
+
+    def __init__(self, *replies: str) -> None:
+        self.replies = list(replies)
+        self.calls: list[tuple[str, str]] = []
+
+    def complete(self, system: str, user: str) -> str:
+        self.calls.append((system, user))
+        if not self.replies:
+            raise AssertionError("ScriptedLLM called more times than scripted")
+        return self.replies.pop(0)
+
+
 @pytest.fixture
 def policy_pdf() -> bytes:
     return make_text_pdf(FICTIONAL_POLICY_PAGES)
