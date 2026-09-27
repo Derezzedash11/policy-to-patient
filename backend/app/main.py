@@ -1,4 +1,4 @@
-"""FastAPI application factory. Run with: uvicorn app.main:app --reload"""
+"""FastAPI application factory. Run with: uvicorn app.main:create_app --factory"""
 
 from __future__ import annotations
 
@@ -8,9 +8,14 @@ from app.api.routes import router
 from app.config import Settings
 from app.cost.base import CostEstimator
 from app.cost.demo_table import DemoTableEstimator
+from app.embeddings import build_embedder
+from app.embeddings.base import Embedder
 from app.qa.llm import AnthropicLLM, LLMClient
+from app.retrieval.vector import VectorRetriever
 from app.services import PolicyService
 from app.store import PolicyStore
+from app.vectorstore import build_vector_store
+from app.vectorstore.base import VectorStore
 
 _UNSET = object()
 
@@ -19,6 +24,8 @@ def create_app(
     settings: Settings | None = None,
     llm: LLMClient | None | object = _UNSET,
     cost_estimator: CostEstimator | None = None,
+    embedder: Embedder | None = None,
+    vector_store: VectorStore | None = None,
 ) -> FastAPI:
     settings = settings or Settings()
     if llm is _UNSET:
@@ -28,20 +35,23 @@ def create_app(
             else None
         )
     app = FastAPI(
-        title="Policy-to-Patient API (Phase 1 prototype)",
+        title="Policy-to-Patient API (prototype)",
         description=(
-            "Policy PDF → page-aware evidence → grounded Q&A with citations → synthetic cost "
-            "estimate → deterministic coverage/OOP. Prototype only: outputs are estimates, not "
+            "Policy PDF → page-aware chunks → embeddings → vector search → grounded Q&A with "
+            "citations → synthetic cost estimate → deterministic coverage/OOP. "
+            "Prototype only: outputs are estimates, not "
             "insurance decisions, and cost figures are synthetic."
         ),
-        version="0.1.0",
+        version="0.2.0",
     )
-    app.state.policy_service = PolicyService(settings, PolicyStore(settings.data_dir), llm)  # type: ignore[arg-type]
+    retriever = VectorRetriever(
+        embedder or build_embedder(settings), vector_store or build_vector_store(settings)
+    )
+    app.state.policy_service = PolicyService(
+        settings, PolicyStore(settings.data_dir), llm, retriever  # type: ignore[arg-type]
+    )
     app.state.cost_estimator = cost_estimator or DemoTableEstimator(
         settings.cost_table_path, settings.cost_modifiers_path
     )
     app.include_router(router)
     return app
-
-
-app = create_app()

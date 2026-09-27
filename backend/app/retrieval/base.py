@@ -1,4 +1,4 @@
-"""Retriever interface. Phase 2 can add an embeddings/pgvector implementation."""
+"""Retriever interface: index a document once, then search it by doc_id."""
 
 from __future__ import annotations
 
@@ -14,9 +14,20 @@ class ScoredChunk:
     score: float
 
 
-class Retriever(Protocol):
-    def index(self, chunks: list[Chunk]) -> None:
-        """(Re)build the index over these chunks."""
+class NotIndexedError(KeyError):
+    """The document has no index for the current retriever configuration."""
 
-    def search(self, query: str, top_k: int) -> list[ScoredChunk]:
-        """Return up to top_k chunks, best first, with similarity scores in [0, 1]."""
+
+class Retriever(Protocol):
+    name: str
+    default_min_score: float
+    is_semantic: bool
+
+    def index(self, doc_id: str, chunks: list[Chunk]) -> None:
+        """Build and persist the index for one document (replacing any previous one)."""
+
+    def is_indexed(self, doc_id: str) -> bool:
+        """True when doc_id can be searched without re-indexing."""
+
+    def search(self, doc_id: str, query: str, top_k: int) -> list[ScoredChunk]:
+        """Up to top_k chunks of doc_id only, best first. Raises NotIndexedError if not indexed."""

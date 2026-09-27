@@ -3,21 +3,19 @@ import pytest
 from app.qa.answer import answer_question, extract_citation_labels
 from app.qa.llm import LLMError
 from app.qa.prompt import INSUFFICIENT_MARKER
-from app.retrieval.tfidf import TfidfRetriever
-from conftest import StubLLM
+from conftest import ConceptEmbedder, StubLLM
 
-MIN_SCORE = 0.08
+MIN_SCORE = 0.10
+DOC = "testdoc"
 
 
 @pytest.fixture
-def retriever(policy_chunks):
-    r = TfidfRetriever()
-    r.index(policy_chunks)
-    return r
+def retriever(indexed_retriever):
+    return indexed_retriever
 
 
 def ask(retriever, llm, question="What is the deductible each policy year?"):
-    return answer_question(question, retriever, llm, top_k=3, min_score=MIN_SCORE)
+    return answer_question(question, DOC, retriever, llm, top_k=3, min_score=MIN_SCORE)
 
 
 def test_extract_citation_labels():
@@ -82,7 +80,7 @@ def test_low_relevance_question_is_insufficient_without_calling_llm(retriever):
 
 
 def test_threshold_is_configurable(retriever):
-    res = answer_question("deductible", retriever, None, top_k=3, min_score=0.99)
+    res = answer_question("deductible", DOC, retriever, None, top_k=3, min_score=0.99)
     assert res.status == "insufficient_evidence"
     assert res.evidence  # below-threshold hits returned for transparency
 
@@ -96,3 +94,29 @@ def test_llm_error_falls_back_to_evidence(retriever):
     assert res.status == "llm_error"
     assert res.answer is None
     assert res.citations
+
+
+def test_grounded_answer_from_semantic_retrieval(make_retriever, policy_chunks):
+    # Paraphrased question → semantic stand-in retrieves the waiting-period passage → the LLM
+    # sees only retrieved passages and its citation maps back to page 4.
+    retriever = make_retriever(ConceptEmbedder())
+    retriever.index(DOC, policy_chunks)
+    llm = StubLLM("Pregnancy costs are covered after a 24-month waiting period [C1].")
+    res = answer_question(
+        "How long must I wait before pregnancy costs are paid?", DOC, retriever, llm,
+        top_k=3, min_score=ConceptEmbedder.default_min_score,
+    )
+    assert res.status == "answered"
+    assert res.citations[0].page == 4
+    assert res.citations[0].section == "4. WAITING PERIODS"
+    _, user_prompt = llm.calls[0]
+    assert "waiting period of 24 months" in user_prompt
+    assert "Room rent" not in user_prompt  # below-threshold passages are never sent
+
+
+def test_only_evidence_above_threshold_is_sent_to_llm(retriever):
+    llm = StubLLM("x [C1]")
+    res = answer_question("room rent limit per day", DOC, retriever, llm, top_k=5, min_score=MIN_SCORE)
+    _, user_prompt = llm.calls[0]
+    assert all(e.score >= MIN_SCORE for e in res.evidence)
+    assert user_prompt.count("] page ") == len(res.evidence)

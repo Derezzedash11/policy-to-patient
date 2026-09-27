@@ -49,13 +49,14 @@ def _to_citation(label: str, hit: ScoredChunk) -> Citation:
 
 def answer_question(
     question: str,
+    doc_id: str,
     retriever: Retriever,
     llm: LLMClient | None,
     top_k: int,
     min_score: float,
 ) -> AskResponse:
     mode = "generative" if llm is not None else "extractive"
-    hits = retriever.search(question, top_k)
+    hits = retriever.search(doc_id, question, top_k)
     evidence = [h for h in hits if h.score >= min_score]
 
     if not evidence:
@@ -64,8 +65,8 @@ def answer_question(
             status="insufficient_evidence", mode=mode, question=question,
             evidence=[_to_evidence(h) for h in hits],
             message=(
-                f"No passage met the minimum evidence score {min_score}{best}. "
-                "The policy text retrieved does not clearly address this question; "
+                f"No passage met the minimum relevance score {min_score}{best}. "
+                "The retrieved policy text does not clearly address this question; "
                 "check the policy document manually."
             ),
         )

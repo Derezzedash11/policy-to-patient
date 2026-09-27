@@ -42,6 +42,9 @@ class Health(BaseModel):
     status: str
     llm_mode: str
     llm_model: str | None
+    retrieval: str
+    retrieval_is_semantic: bool
+    min_evidence_score: float
     cost_estimator: str
 
 
@@ -52,6 +55,9 @@ def health(request: Request) -> Health:
         status="ok",
         llm_mode="generative" if service.llm else "extractive",
         llm_model=service.llm.model if service.llm else None,
+        retrieval=service.retriever.name,
+        retrieval_is_semantic=service.retriever.is_semantic,
+        min_evidence_score=service.min_evidence_score,
         cost_estimator="synthetic demo table",
     )
 

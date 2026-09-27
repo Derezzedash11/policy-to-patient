@@ -1,14 +1,23 @@
+import os
+
 import pytest
 from fastapi.testclient import TestClient
 
 from app.config import Settings
+from app.embeddings.hashing import HashingEmbedder
 from app.main import create_app
-from conftest import StubLLM
+from conftest import ConceptEmbedder, CountingEmbedder, StubLLM
+from pdf_factory import make_text_pdf
+
+
+def make_client(tmp_path, llm=None, embedder=None, **settings):
+    settings = Settings(data_dir=tmp_path, anthropic_api_key=None, **settings)
+    return TestClient(create_app(settings, llm=llm, embedder=embedder or HashingEmbedder()))
 
 
 @pytest.fixture
 def client(tmp_path):
-    return TestClient(create_app(Settings(data_dir=tmp_path, anthropic_api_key=None), llm=None))
+    return make_client(tmp_path)
 
 
 def upload(client, pdf):
@@ -19,6 +28,9 @@ def test_health_reports_extractive_mode(client):
     body = client.get("/health").json()
     assert body["status"] == "ok"
     assert body["llm_mode"] == "extractive"
+    assert body["retrieval"] == "hashing-v1:1024 @ local-files"
+    assert body["retrieval_is_semantic"] is False
+    assert body["min_evidence_score"] == HashingEmbedder.default_min_score
 
 
 def test_end_to_end_flow(client, policy_pdf):
@@ -75,7 +87,7 @@ def test_end_to_end_flow(client, policy_pdf):
 
 def test_generative_mode_with_stub_llm(tmp_path, policy_pdf):
     llm = StubLLM("Each policy year has a deductible of Rs 10,000 [C1].")
-    client = TestClient(create_app(Settings(data_dir=tmp_path), llm=llm))
+    client = make_client(tmp_path, llm=llm)
     doc_id = upload(client, policy_pdf).json()["doc_id"]
     assert client.get("/health").json()["llm_mode"] == "generative"
     ask = client.post(f"/policies/{doc_id}/ask", json={"question": "What is the deductible?"}).json()
@@ -92,12 +104,52 @@ def test_coverage_with_explicit_total(client):
     assert body["covered_amount"] == 90000
 
 
-def test_policies_persist_across_app_restart(tmp_path, policy_pdf):
-    first = TestClient(create_app(Settings(data_dir=tmp_path), llm=None))
-    doc_id = upload(first, policy_pdf).json()["doc_id"]
-    second = TestClient(create_app(Settings(data_dir=tmp_path), llm=None))
-    r = second.post(f"/policies/{doc_id}/search", json={"query": "sum insured"})
-    assert r.status_code == 200 and r.json()
+def test_restart_reuses_stored_vectors_without_re_embedding(tmp_path, policy_pdf):
+    first_embedder = CountingEmbedder(HashingEmbedder())
+    first = make_client(tmp_path, embedder=first_embedder)
+    summary = upload(first, policy_pdf).json()
+    assert first_embedder.documents_embedded == summary["chunk_count"]  # embedded once at ingestion
+    before = first.post(f"/policies/{summary['doc_id']}/search", json={"query": "room rent"}).json()
+
+    restarted_embedder = CountingEmbedder(HashingEmbedder())
+    restarted = make_client(tmp_path, embedder=restarted_embedder)
+    after = restarted.post(f"/policies/{summary['doc_id']}/search", json={"query": "room rent"}).json()
+    ask = restarted.post(f"/policies/{summary['doc_id']}/ask", json={"question": "room rent limit?"}).json()
+    assert restarted_embedder.documents_embedded == 0
+    assert after == before
+    assert ask["status"] == "evidence_only" and ask["citations"][0]["page"] == 2
+
+
+def test_changing_embedding_model_reindexes_once_from_stored_chunks(tmp_path, policy_pdf):
+    doc_id = upload(make_client(tmp_path), policy_pdf).json()["doc_id"]
+    concept = CountingEmbedder(ConceptEmbedder())
+    client = make_client(tmp_path, embedder=concept)
+    question = {"question": "How long must I wait before pregnancy costs are paid?"}
+    first = client.post(f"/policies/{doc_id}/ask", json=question).json()
+    client.post(f"/policies/{doc_id}/ask", json=question)
+    assert concept.documents_embedded == client.get(f"/policies/{doc_id}").json()["chunk_count"]
+    assert first["status"] == "evidence_only"
+    assert first["citations"][0]["section"] == "4. WAITING PERIODS"
+
+
+def test_policies_are_isolated(client, policy_pdf):
+    doc_a = upload(client, policy_pdf).json()["doc_id"]
+    other_pdf = make_text_pdf([["OTHER FICTIONAL POLICY", "A deductible of Rs 25,000 applies."]])
+    doc_b = client.post("/policies", files={"file": ("other.pdf", other_pdf, "application/pdf")}).json()["doc_id"]
+    assert doc_a != doc_b
+    hits_a = client.post(f"/policies/{doc_a}/search", json={"query": "deductible", "top_k": 20}).json()
+    hits_b = client.post(f"/policies/{doc_b}/search", json={"query": "deductible", "top_k": 20}).json()
+    assert all(h["chunk_id"].startswith(doc_a) for h in hits_a)
+    assert all(h["chunk_id"].startswith(doc_b) for h in hits_b)
+    assert "Rs 25,000" in hits_b[0]["text"] and all("25,000" not in h["text"] for h in hits_a)
+
+
+def test_min_evidence_score_override(tmp_path, policy_pdf):
+    client = make_client(tmp_path, min_evidence_score=0.99)
+    assert client.get("/health").json()["min_evidence_score"] == 0.99
+    doc_id = upload(client, policy_pdf).json()["doc_id"]
+    ask = client.post(f"/policies/{doc_id}/ask", json={"question": "What is the deductible?"}).json()
+    assert ask["status"] == "insufficient_evidence"
 
 
 def test_error_cases(client):
@@ -112,3 +164,26 @@ def test_error_cases(client):
     r = client.post("/coverage", json=both)
     assert r.status_code == 422 and "not both" in r.json()["detail"]
     assert client.post("/estimate", json={"treatment_code": "CATARACT", "city_tier": "moon"}).status_code == 422
+
+
+def test_policy_without_text_is_indexed_and_reports_insufficient_evidence(client):
+    scanned = make_text_pdf([[], []])  # pages with no text layer, like a scan (no OCR)
+    summary = client.post("/policies", files={"file": ("scan.pdf", scanned, "application/pdf")}).json()
+    assert summary["chunk_count"] == 0 and summary["empty_pages"] == [1, 2]
+    ask = client.post(f"/policies/{summary['doc_id']}/ask", json={"question": "What is the deductible?"}).json()
+    assert ask["status"] == "insufficient_evidence" and ask["evidence"] == []
+
+
+@pytest.mark.skipif(not os.environ.get("TEST_DATABASE_URL"), reason="TEST_DATABASE_URL not set")
+def test_pgvector_restart_reuses_stored_vectors(tmp_path):
+    pdf = make_text_pdf([["9. AMBULANCE", "Road ambulance charges are paid up to Rs 2,000 per admission."]])
+    url = os.environ["TEST_DATABASE_URL"]
+    first = make_client(tmp_path, database_url=url)
+    assert first.get("/health").json()["retrieval"].endswith("@ pgvector")
+    doc_id = first.post("/policies", files={"file": ("amb.pdf", pdf, "application/pdf")}).json()["doc_id"]
+
+    counting = CountingEmbedder(HashingEmbedder())
+    restarted = make_client(tmp_path, embedder=counting, database_url=url)
+    hits = restarted.post(f"/policies/{doc_id}/search", json={"query": "ambulance charges"}).json()
+    assert counting.documents_embedded == 0
+    assert hits[0]["section"] == "9. AMBULANCE" and hits[0]["page"] == 1

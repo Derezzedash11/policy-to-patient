@@ -10,9 +10,9 @@ REPO_ROOT = Path(__file__).resolve().parents[2]
 SAMPLE_DIR = REPO_ROOT / "data" / "sample"
 
 
-def _env_float(name: str, default: float) -> float:
+def _env_optional_float(name: str) -> float | None:
     raw = os.environ.get(name)
-    return float(raw) if raw not in (None, "") else default
+    return float(raw) if raw not in (None, "") else None
 
 
 def _env_int(name: str, default: int) -> int:
@@ -29,9 +29,18 @@ class Settings:
         default_factory=lambda: os.environ.get("ANTHROPIC_API_KEY") or None
     )
     llm_model: str = field(default_factory=lambda: os.environ.get("LLM_MODEL") or "claude-opus-5")
-    min_evidence_score: float = field(
-        default_factory=lambda: _env_float("MIN_EVIDENCE_SCORE", 0.08)
+    # None → use the embedder's own default threshold (scores are not comparable across models).
+    min_evidence_score: float | None = field(
+        default_factory=lambda: _env_optional_float("MIN_EVIDENCE_SCORE")
     )
+    embedding_provider: str = field(
+        default_factory=lambda: os.environ.get("EMBEDDING_PROVIDER") or "fastembed"
+    )
+    embedding_model: str = field(
+        default_factory=lambda: os.environ.get("EMBEDDING_MODEL") or "BAAI/bge-small-en-v1.5"
+    )
+    # PostgreSQL + pgvector when set; otherwise vectors are stored as local files under data_dir.
+    database_url: str | None = field(default_factory=lambda: os.environ.get("DATABASE_URL") or None)
     retrieval_top_k: int = field(default_factory=lambda: _env_int("RETRIEVAL_TOP_K", 5))
     max_upload_mb: int = field(default_factory=lambda: _env_int("MAX_UPLOAD_MB", 20))
     cost_table_path: Path = field(

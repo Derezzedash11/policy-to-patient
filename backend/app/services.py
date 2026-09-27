@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import hashlib
-from collections.abc import Callable
+import logging
 
 from app.config import Settings
 from app.cost.base import CostEstimator
@@ -19,9 +19,10 @@ from app.models import (
 from app.qa.answer import answer_question
 from app.qa.llm import LLMClient
 from app.retrieval.base import Retriever, ScoredChunk
-from app.retrieval.tfidf import TfidfRetriever
 from app.rules.coverage import calculate_coverage
 from app.store import PolicyStore
+
+logger = logging.getLogger(__name__)
 
 
 class PolicyService:
@@ -30,13 +31,18 @@ class PolicyService:
         settings: Settings,
         store: PolicyStore,
         llm: LLMClient | None,
-        retriever_factory: Callable[[], Retriever] = TfidfRetriever,
+        retriever: Retriever,
     ) -> None:
         self.settings = settings
         self.store = store
         self.llm = llm
-        self._retriever_factory = retriever_factory
-        self._retrievers: dict[str, Retriever] = {}
+        self.retriever = retriever
+
+    @property
+    def min_evidence_score(self) -> float:
+        if self.settings.min_evidence_score is not None:
+            return self.settings.min_evidence_score
+        return self.retriever.default_min_score
 
     def ingest(self, filename: str, data: bytes) -> PolicySummary:
         doc_id = hashlib.sha256(data).hexdigest()[:16]
@@ -51,29 +57,32 @@ class PolicyService:
             empty_pages=[p.page for p in pages if p.empty_text],
             sections=sections,
         )
+        # Embed once at ingestion; the summary is written last so a failed index leaves no policy.
+        self.retriever.index(doc_id, chunks)
         self.store.save(summary, data, pages, chunks)
-        self._retrievers.pop(doc_id, None)
         return summary
 
-    def retriever(self, doc_id: str) -> Retriever:
-        if doc_id not in self._retrievers:
-            retriever = self._retriever_factory()
-            retriever.index(self.store.get_chunks(doc_id))  # raises KeyError if unknown
-            self._retrievers[doc_id] = retriever
-        return self._retrievers[doc_id]
+    def ensure_indexed(self, doc_id: str) -> None:
+        """Index from stored chunks only if no index exists for the current embedding model
+        (e.g. EMBEDDING_PROVIDER/MODEL changed). A normal restart never re-embeds."""
+        if not self.retriever.is_indexed(doc_id):
+            logger.warning("No index for %s with %s; indexing stored chunks", doc_id, self.retriever.name)
+            self.retriever.index(doc_id, self.store.get_chunks(doc_id))
 
     def search(self, doc_id: str, query: str, top_k: int | None) -> list[ScoredChunk]:
-        return self.retriever(doc_id).search(query, top_k or self.settings.retrieval_top_k)
+        self.ensure_indexed(doc_id)
+        return self.retriever.search(doc_id, query, top_k or self.settings.retrieval_top_k)
 
     def ask(self, doc_id: str, question: str, top_k: int | None) -> AskResponse:
+        self.ensure_indexed(doc_id)
         return answer_question(
             question,
-            self.retriever(doc_id),
+            doc_id,
+            self.retriever,
             self.llm,
             top_k=top_k or self.settings.retrieval_top_k,
-            min_score=self.settings.min_evidence_score,
+            min_score=self.min_evidence_score,
         )
-
 
 def compute_coverage(request: CoverageRequest, estimator: CostEstimator) -> CoverageResult:
     """Resolve the cost (estimator or explicit total) and run the rules engine."""
