@@ -168,3 +168,12 @@ Out of scope for Phase 1: bill upload/auditing, ML training, OCR, self-healing r
 - Which real policy PDF to use for the demo, and may it be committed?
 - Is there a treatment-cost dataset for Phase 2 (source, licence, columns)?
 - LLM model choice/key availability (plan assumes Anthropic API, optional).
+
+## 10. Implementation notes (Phase 1 built)
+
+Deviations from the plan above, each small:
+- Added `backend/app/services.py` to wire storage, retrieval, Q&A, cost and rules for the routes (keeps `routes.py` thin).
+- Added `POST /policies/{id}/search` and `GET /policies` for evidence inspection.
+- Added `data/sample/demo_cost_modifiers.csv` (synthetic city-tier multipliers and room rates) next to the treatment table.
+- TF-IDF uses a small domain stop-word list (`policy`, `cover`, `covered`, ...) so generic question words don't count as evidence.
+- The frontend (optional step 8) is not built yet; the demo runs through `/docs` or curl.

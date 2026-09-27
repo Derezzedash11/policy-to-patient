@@ -1,0 +1,8 @@
+# SYNTHETIC DEMO DATA - NOT REAL MEDICAL PRICES. Hand-written multipliers and room rates for the prototype only.
+kind,key,low,high
+city_tier_multiplier,tier1,1.0,1.0
+city_tier_multiplier,tier2,0.8,0.9
+city_tier_multiplier,tier3,0.65,0.75
+room_rent_per_day,general_ward,2000,4000
+room_rent_per_day,semi_private,4000,7000
+room_rent_per_day,private,7000,12000

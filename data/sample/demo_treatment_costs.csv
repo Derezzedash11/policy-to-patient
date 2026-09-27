@@ -1,0 +1,11 @@
+# SYNTHETIC DEMO DATA - NOT REAL MEDICAL PRICES. Hand-written round numbers for the Policy-to-Patient prototype only.
+# Amounts are in INR for a tier1 city, excluding room charges. Do not use for any real decision.
+treatment_code,treatment_name,category,procedure_cost_low,procedure_cost_high,typical_length_of_stay_days
+APPENDECTOMY,Appendectomy (laparoscopic),surgery,60000,110000,2
+CATARACT,Cataract surgery (one eye),cataract,25000,55000,0
+KNEE_REPLACEMENT,Total knee replacement (one knee),joint_replacement,180000,320000,4
+NORMAL_DELIVERY,Normal delivery,maternity,30000,60000,2
+C_SECTION,Caesarean section delivery,maternity,55000,100000,4
+ANGIOPLASTY,Coronary angioplasty (single stent),cardiac,150000,280000,3
+HERNIA_REPAIR,Inguinal hernia repair,surgery,50000,95000,2
+DENGUE_MEDICAL,Dengue fever (medical management),medical,15000,35000,4
