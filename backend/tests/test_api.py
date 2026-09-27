@@ -102,9 +102,13 @@ def test_policies_persist_across_app_restart(tmp_path, policy_pdf):
 
 def test_error_cases(client):
     assert upload(client, b"not a pdf").status_code == 422
+    assert upload(client, b"%PDF-1.7 truncated").status_code == 422
     assert client.get("/policies/unknown123").status_code == 404
     assert client.get("/policies/../etc").status_code == 404
     assert client.post("/policies/unknown123/ask", json={"question": "deductible?"}).status_code == 404
     assert client.post("/estimate", json={"treatment_code": "NOPE"}).status_code == 404
     assert client.post("/coverage", json={"terms": {}}).status_code == 422
+    both = {"terms": {}, "total_cost": 50000, "treatment": {"treatment_code": "CATARACT"}}
+    r = client.post("/coverage", json=both)
+    assert r.status_code == 422 and "not both" in r.json()["detail"]
     assert client.post("/estimate", json={"treatment_code": "CATARACT", "city_tier": "moon"}).status_code == 422

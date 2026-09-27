@@ -160,7 +160,7 @@ class PolicyTerms(BaseModel):
 
 
 class CoverageRequest(BaseModel):
-    """Either supply `treatment` (cost comes from the estimator) or an explicit `total_cost`."""
+    """Supply exactly one of `treatment` (cost comes from the estimator) or an explicit `total_cost`."""
 
     terms: PolicyTerms
     treatment: TreatmentInput | None = None

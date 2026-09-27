@@ -35,3 +35,31 @@ def test_rejects_corrupt_pdf():
 def test_escaped_characters_survive():
     pages = extract_pages(make_text_pdf([["Limit (per day) applies"]]))
     assert pages[0].text == "Limit (per day) applies"
+
+
+@pytest.mark.parametrize("error", [AttributeError("x"), KeyError("x"), TypeError("x")])
+def test_unexpected_parser_errors_become_extraction_errors(monkeypatch, policy_pdf, error):
+    import app.ingestion.pdf_extract as mod
+
+    def broken_reader(*args, **kwargs):
+        raise error
+
+    monkeypatch.setattr(mod, "PdfReader", broken_reader)
+    with pytest.raises(PDFExtractionError, match=type(error).__name__):
+        extract_pages(policy_pdf)
+
+
+def test_corrupted_pdfs_only_raise_extraction_errors(policy_pdf):
+    # Regression: byte-level corruption used to leak AttributeError/KeyError/TypeError
+    # (and pypdf's LimitReachedError) out of extract_pages, turning uploads into HTTP 500s.
+    import random
+
+    rng = random.Random(0)
+    for _ in range(200):
+        data = bytearray(policy_pdf)
+        for _ in range(5):
+            data[rng.randrange(9, len(data))] = rng.randrange(256)
+        try:
+            extract_pages(bytes(data))
+        except PDFExtractionError:
+            pass

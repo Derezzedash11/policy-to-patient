@@ -78,6 +78,8 @@ class PolicyService:
 def compute_coverage(request: CoverageRequest, estimator: CostEstimator) -> CoverageResult:
     """Resolve the cost (estimator or explicit total) and run the rules engine."""
     estimate: CostEstimate | None = None
+    if request.treatment is not None and request.total_cost is not None:
+        raise ValueError("Provide either 'treatment' or 'total_cost', not both")
     if request.treatment is not None:
         estimate = estimator.estimate(request.treatment)
         total = estimate.estimate

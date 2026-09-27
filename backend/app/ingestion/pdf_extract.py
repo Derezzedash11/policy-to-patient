@@ -40,8 +40,12 @@ def extract_pages(data: bytes) -> list[PageText]:
         for index, page in enumerate(reader.pages, start=1):
             text = _normalise(page.extract_text() or "")
             pages.append(PageText(page=index, text=text, empty_text=not text))
+    except PDFExtractionError:
+        raise
     except PdfReadError as exc:
         raise PDFExtractionError(f"Could not read PDF: {exc}") from exc
+    except Exception as exc:  # noqa: BLE001 - malformed input makes pypdf raise arbitrary errors
+        raise PDFExtractionError(f"Could not read PDF ({type(exc).__name__})") from exc
     if not pages:
         raise PDFExtractionError("PDF has no pages")
     return pages
