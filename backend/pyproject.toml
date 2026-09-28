@@ -21,7 +21,9 @@ dependencies = [
 embeddings = ["fastembed>=0.4"]
 # PostgreSQL + pgvector vector store (used when DATABASE_URL is set).
 pgvector = ["psycopg[binary]>=3.1"]
-dev = ["pytest>=8", "httpx>=0.27", "psycopg[binary]>=3.1"]
+# Gemini as the LLM provider (LLM_PROVIDER=gemini).
+gemini = ["google-genai>=1.0"]
+dev = ["pytest>=8", "httpx>=0.27", "psycopg[binary]>=3.1", "google-genai>=1.0"]
 # Browser test of the demo UI (tests/e2e, needs a running server; see that file).
 e2e = ["playwright>=1.45"]
 

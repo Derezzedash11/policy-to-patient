@@ -12,7 +12,8 @@ from app.cost.base import CostEstimator
 from app.cost.demo_table import DemoTableEstimator
 from app.embeddings import build_embedder
 from app.embeddings.base import Embedder
-from app.qa.llm import AnthropicLLM, LLMClient
+from app.qa import build_llm
+from app.qa.llm import LLMClient
 from app.retrieval.vector import VectorRetriever
 from app.services import PolicyService
 from app.store import PolicyStore
@@ -31,11 +32,7 @@ def create_app(
 ) -> FastAPI:
     settings = settings or Settings()
     if llm is _UNSET:
-        llm = (
-            AnthropicLLM(settings.anthropic_api_key, settings.llm_model)
-            if settings.anthropic_api_key
-            else None
-        )
+        llm = build_llm(settings)
     app = FastAPI(
         title="Policy-to-Patient API (prototype)",
         description=(

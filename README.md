@@ -84,6 +84,17 @@ export ANTHROPIC_API_KEY=sk-ant-...
 export LLM_MODEL=claude-opus-5      # default
 ```
 
+Or use Gemini instead (`pip install -e "backend[gemini]"`):
+
+```bash
+export LLM_PROVIDER=gemini          # default: anthropic
+export GEMINI_API_KEY=...
+export GEMINI_MODEL=gemini-2.5-flash   # default
+```
+
+Both providers receive the same prompt and evidence and go through the same citation and figure
+verification.
+
 Other settings (all optional) are listed in `backend/.env.example`.
 
 ## Run the API

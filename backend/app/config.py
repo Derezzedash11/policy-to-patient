@@ -29,6 +29,14 @@ class Settings:
         default_factory=lambda: os.environ.get("ANTHROPIC_API_KEY") or None
     )
     llm_model: str = field(default_factory=lambda: os.environ.get("LLM_MODEL") or "claude-opus-5")
+    # Which LLM answers questions: "anthropic" (uses LLM_MODEL) or "gemini" (uses GEMINI_MODEL).
+    llm_provider: str = field(
+        default_factory=lambda: (os.environ.get("LLM_PROVIDER") or "anthropic").strip().lower()
+    )
+    gemini_api_key: str | None = field(default_factory=lambda: os.environ.get("GEMINI_API_KEY") or None)
+    gemini_model: str = field(
+        default_factory=lambda: os.environ.get("GEMINI_MODEL") or "gemini-2.5-flash"
+    )
     # None → use the embedder's own default threshold (scores are not comparable across models).
     min_evidence_score: float | None = field(
         default_factory=lambda: _env_optional_float("MIN_EVIDENCE_SCORE")
