@@ -1,0 +1,34 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "policy-to-patient-backend"
+version = "0.3.0"
+description = "Policy-to-Patient Phase 1 prototype backend (HackMatrix 5.0 FIN-01)"
+requires-python = ">=3.10"
+dependencies = [
+    "fastapi>=0.115",
+    "uvicorn>=0.30",
+    "python-multipart>=0.0.9",
+    "pypdf>=5.0",
+    "numpy>=1.26",
+    "anthropic>=1.0",
+]
+
+[project.optional-dependencies]
+# Local semantic embeddings (ONNX, CPU). Downloads the model on first use.
+embeddings = ["fastembed>=0.4"]
+# PostgreSQL + pgvector vector store (used when DATABASE_URL is set).
+pgvector = ["psycopg[binary]>=3.1"]
+# Gemini as the LLM provider (LLM_PROVIDER=gemini).
+gemini = ["google-genai>=1.0"]
+dev = ["pytest>=8", "httpx>=0.27", "psycopg[binary]>=3.1", "google-genai>=1.0"]
+# Browser test of the demo UI (tests/e2e, needs a running server; see that file).
+e2e = ["playwright>=1.45"]
+
+[tool.setuptools.packages.find]
+include = ["app*", "evaluation*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

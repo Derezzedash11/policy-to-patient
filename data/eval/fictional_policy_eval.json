@@ -1,0 +1,138 @@
+{
+  "name": "fictional_policy_eval_v1",
+  "description": "SYNTHETIC evaluation set. The policy below is a fictional wording written for testing the Policy-to-Patient prototype; it does not describe any real insurer, product, price or benefit. Questions and labels were written by hand against this text. Results measure retrieval on this fictional document only.",
+  "policy": {
+    "doc_name": "fictional_health_shield_policy.pdf",
+    "pages": [
+      [
+        "FICTIONAL TEST POLICY - NOT A REAL INSURANCE PRODUCT",
+        "Sample Health Shield (fictional) - policy wording for software testing only",
+        "1. PREAMBLE",
+        "This document is a fictional policy wording created to test the Policy-to-Patient prototype.",
+        "It does not describe any real insurer, product, price or benefit.",
+        "The policy covers inpatient hospitalisation expenses incurred in India during the policy year.",
+        "2. DEFINITIONS",
+        "Hospitalisation means admission to a hospital for a minimum of 24 consecutive hours.",
+        "Day care treatment means a procedure that needs less than 24 hours of admission due to technological advancement.",
+        "Policy year means a period of twelve months beginning on the policy start date.",
+        "Pre-existing disease means any condition diagnosed by a physician within 48 months before the policy start date.",
+        "Network hospital means a hospital that has an agreement with the insurer to provide cashless treatment."
+      ],
+      [
+        "3. SUM INSURED",
+        "The sum insured is Rs 5,00,000 per policy year on a floater basis for all insured members.",
+        "Claims paid during the policy year reduce the sum insured available for the rest of that year.",
+        "4. ROOM RENT",
+        "Room rent, boarding and nursing charges are covered up to Rs 5,000 per day.",
+        "Intensive care unit charges are covered up to Rs 10,000 per day.",
+        "If the insured person chooses a room above the eligible limit, the difference in room charges is payable by the insured person."
+      ],
+      [
+        "5. SUB-LIMITS",
+        "Cataract surgery is covered up to Rs 40,000 per eye.",
+        "Total knee replacement is covered up to Rs 2,00,000 per knee.",
+        "Treatment of kidney stones is covered up to Rs 50,000 per policy year.",
+        "6. PRE AND POST HOSPITALISATION",
+        "Medical expenses incurred up to 30 days before admission are covered.",
+        "Medical expenses incurred up to 60 days after discharge are covered.",
+        "These expenses are covered only if the main hospitalisation claim is admissible."
+      ],
+      [
+        "7. DAY CARE AND AMBULANCE",
+        "Day care treatments listed in the annexure are covered up to the sum insured.",
+        "Road ambulance charges are covered up to Rs 2,000 per hospitalisation.",
+        "8. DEDUCTIBLE",
+        "A deductible of Rs 10,000 applies to each policy year.",
+        "The insurer pays only the admissible amount above the deductible.",
+        "9. CO-PAYMENT",
+        "The insured person bears a co-payment of 10 percent of every admissible claim.",
+        "A co-payment of 20 percent applies if the insured person is aged 61 years or above at entry."
+      ],
+      [
+        "10. WAITING PERIODS",
+        "An initial waiting period of 30 days applies to all illnesses except accidents.",
+        "Pre-existing diseases are covered after a waiting period of 36 months of continuous coverage.",
+        "Hernia, cataract and joint replacement are covered after a waiting period of 24 months.",
+        "Maternity expenses are covered after a waiting period of 24 months.",
+        "11. MATERNITY",
+        "Maternity expenses are covered up to Rs 50,000 for a normal delivery or caesarean section.",
+        "Maternity cover is limited to two deliveries during the lifetime of the policy."
+      ],
+      [
+        "12. EXCLUSIONS",
+        "The insurer does not pay for cosmetic or plastic surgery unless needed after an accident.",
+        "Dental treatment is excluded unless it requires hospitalisation due to an accident.",
+        "Expenses for spectacles, contact lenses and hearing aids are excluded.",
+        "Treatment for injuries from participation in hazardous sports is excluded.",
+        "Experimental or unproven treatments are excluded."
+      ],
+      [
+        "13. CLAIMS PROCEDURE",
+        "For planned cashless treatment, the insured person must inform the insurer at least 48 hours before admission.",
+        "For emergency admission, the insurer must be informed within 24 hours of admission.",
+        "Reimbursement claims must be submitted within 30 days of discharge with original bills.",
+        "14. RENEWAL AND CANCELLATION",
+        "The policy is renewable for life if the premium is paid before the end of the grace period.",
+        "A grace period of 30 days is allowed for renewal.",
+        "The insured person may cancel a new policy within a free look period of 15 days."
+      ],
+      [
+        "15. GRIEVANCES",
+        "Complaints can be sent to the grievance cell of the insurer by email or letter.",
+        "The insurer will respond to a complaint within 14 days."
+      ]
+    ]
+  },
+  "questions": [
+    {"id": "d01", "kind": "direct", "question": "What is the sum insured per policy year?", "answerable": true, "expected": [{"page": 2, "section": "3. SUM INSURED"}], "keyword": "Rs 5,00,000"},
+    {"id": "d02", "kind": "direct", "question": "What is the room rent limit per day?", "answerable": true, "expected": [{"page": 2, "section": "4. ROOM RENT"}], "keyword": "Rs 5,000 per day"},
+    {"id": "d03", "kind": "direct", "question": "What is the sub-limit for cataract surgery?", "answerable": true, "expected": [{"page": 3, "section": "5. SUB-LIMITS"}], "keyword": "Rs 40,000 per eye"},
+    {"id": "d04", "kind": "direct", "question": "How much is covered for total knee replacement?", "answerable": true, "expected": [{"page": 3, "section": "5. SUB-LIMITS"}], "keyword": "Rs 2,00,000"},
+    {"id": "d05", "kind": "direct", "question": "Is there a limit for treatment of kidney stones?", "answerable": true, "expected": [{"page": 3, "section": "5. SUB-LIMITS"}], "keyword": "Rs 50,000"},
+    {"id": "d06", "kind": "direct", "question": "How many days of medical expenses before admission are covered?", "answerable": true, "expected": [{"page": 3, "section": "6. PRE AND POST HOSPITALISATION"}], "keyword": "30 days before admission"},
+    {"id": "d07", "kind": "direct", "question": "How many days of medical expenses after discharge are covered?", "answerable": true, "expected": [{"page": 3, "section": "6. PRE AND POST HOSPITALISATION"}], "keyword": "60 days after discharge"},
+    {"id": "d08", "kind": "direct", "question": "What is the limit for road ambulance charges?", "answerable": true, "expected": [{"page": 4, "section": "7. DAY CARE AND AMBULANCE"}], "keyword": "Rs 2,000"},
+    {"id": "d09", "kind": "direct", "question": "What is the deductible for each policy year?", "answerable": true, "expected": [{"page": 4, "section": "8. DEDUCTIBLE"}], "keyword": "Rs 10,000"},
+    {"id": "d10", "kind": "direct", "question": "What co-payment percentage does the insured person bear?", "answerable": true, "expected": [{"page": 4, "section": "9. CO-PAYMENT"}], "keyword": "10 percent"},
+    {"id": "d11", "kind": "direct", "question": "What is the waiting period for pre-existing diseases?", "answerable": true, "expected": [{"page": 5, "section": "10. WAITING PERIODS"}], "keyword": "36 months"},
+    {"id": "d12", "kind": "direct", "question": "What is the initial waiting period for illnesses?", "answerable": true, "expected": [{"page": 5, "section": "10. WAITING PERIODS"}], "keyword": "30 days"},
+    {"id": "d13", "kind": "direct", "question": "What is the waiting period for maternity expenses?", "answerable": true, "expected": [{"page": 5, "section": "10. WAITING PERIODS"}], "keyword": "24 months"},
+    {"id": "d14", "kind": "direct", "question": "How much is covered for maternity delivery expenses?", "answerable": true, "expected": [{"page": 5, "section": "11. MATERNITY"}], "keyword": "Rs 50,000"},
+    {"id": "d15", "kind": "direct", "question": "Is dental treatment excluded?", "answerable": true, "expected": [{"page": 6, "section": "12. EXCLUSIONS"}], "keyword": "Dental treatment is excluded"},
+    {"id": "d16", "kind": "direct", "question": "How many hours before a planned cashless admission must the insurer be informed?", "answerable": true, "expected": [{"page": 7, "section": "13. CLAIMS PROCEDURE"}], "keyword": "48 hours"},
+    {"id": "d17", "kind": "direct", "question": "Within how many days must reimbursement claims be submitted?", "answerable": true, "expected": [{"page": 7, "section": "13. CLAIMS PROCEDURE"}], "keyword": "30 days of discharge"},
+    {"id": "d18", "kind": "direct", "question": "What is the free look period?", "answerable": true, "expected": [{"page": 7, "section": "14. RENEWAL AND CANCELLATION"}], "keyword": "15 days"},
+    {"id": "d19", "kind": "direct", "question": "How long is the grace period for renewal?", "answerable": true, "expected": [{"page": 7, "section": "14. RENEWAL AND CANCELLATION"}], "keyword": "30 days"},
+    {"id": "d20", "kind": "direct", "question": "Within how many days will the insurer respond to a complaint?", "answerable": true, "expected": [{"page": 8, "section": "15. GRIEVANCES"}], "keyword": "14 days"},
+    {"id": "d21", "kind": "direct", "question": "Are cosmetic or plastic surgery expenses paid?", "answerable": true, "expected": [{"page": 6, "section": "12. EXCLUSIONS"}], "keyword": "cosmetic or plastic surgery"},
+
+    {"id": "p01", "kind": "paraphrase", "question": "How much of my own money do I spend each year before the insurance starts paying?", "answerable": true, "expected": [{"page": 4, "section": "8. DEDUCTIBLE"}], "keyword": "Rs 10,000"},
+    {"id": "p02", "kind": "paraphrase", "question": "What share of each bill do I have to pay myself?", "answerable": true, "expected": [{"page": 4, "section": "9. CO-PAYMENT"}], "keyword": "10 percent"},
+    {"id": "p03", "kind": "paraphrase", "question": "What is paid for a hospital bed per night?", "answerable": true, "expected": [{"page": 2, "section": "4. ROOM RENT"}], "keyword": "Rs 5,000 per day"},
+    {"id": "p04", "kind": "paraphrase", "question": "If I get pregnant soon after buying, when will childbirth costs be paid?", "answerable": true, "expected": [{"page": 5, "section": "10. WAITING PERIODS"}, {"page": 5, "section": "11. MATERNITY"}], "keyword": "24 months"},
+    {"id": "p05", "kind": "paraphrase", "question": "Is tooth extraction paid for?", "answerable": true, "expected": [{"page": 6, "section": "12. EXCLUSIONS"}], "keyword": "Dental treatment"},
+    {"id": "p06", "kind": "paraphrase", "question": "Will new glasses be reimbursed?", "answerable": true, "expected": [{"page": 6, "section": "12. EXCLUSIONS"}], "keyword": "spectacles"},
+    {"id": "p07", "kind": "paraphrase", "question": "How long must I wait before an illness I already had is paid for?", "answerable": true, "expected": [{"page": 5, "section": "10. WAITING PERIODS"}], "keyword": "36 months"},
+    {"id": "p08", "kind": "paraphrase", "question": "What is the most the insurer will pay in total in one year?", "answerable": true, "expected": [{"page": 2, "section": "3. SUM INSURED"}], "keyword": "Rs 5,00,000"},
+    {"id": "p09", "kind": "paraphrase", "question": "Is there a cap on ICU costs?", "answerable": true, "expected": [{"page": 2, "section": "4. ROOM RENT"}], "keyword": "Intensive care unit"},
+    {"id": "p10", "kind": "paraphrase", "question": "How soon should I tell them after an emergency hospital admission?", "answerable": true, "expected": [{"page": 7, "section": "13. CLAIMS PROCEDURE"}], "keyword": "24 hours of admission"},
+    {"id": "p11", "kind": "paraphrase", "question": "Can I return the plan after purchase if I change my mind?", "answerable": true, "expected": [{"page": 7, "section": "14. RENEWAL AND CANCELLATION"}], "keyword": "free look period"},
+    {"id": "p12", "kind": "paraphrase", "question": "Are injuries from skydiving or mountaineering paid for?", "answerable": true, "expected": [{"page": 6, "section": "12. EXCLUSIONS"}], "keyword": "hazardous sports"},
+    {"id": "p13", "kind": "paraphrase", "question": "What is paid for an eye lens operation?", "answerable": true, "expected": [{"page": 3, "section": "5. SUB-LIMITS"}], "keyword": "Rs 40,000 per eye"},
+    {"id": "p14", "kind": "paraphrase", "question": "Is an emergency vehicle trip to the hospital reimbursed?", "answerable": true, "expected": [{"page": 4, "section": "7. DAY CARE AND AMBULANCE"}], "keyword": "Road ambulance"},
+    {"id": "p15", "kind": "paraphrase", "question": "Do senior citizens pay a larger share of the bill?", "answerable": true, "expected": [{"page": 4, "section": "9. CO-PAYMENT"}], "keyword": "20 percent"},
+    {"id": "p16", "kind": "paraphrase", "question": "Are medicines bought after I go home from hospital reimbursed?", "answerable": true, "expected": [{"page": 3, "section": "6. PRE AND POST HOSPITALISATION"}], "keyword": "after discharge"},
+
+    {"id": "u01", "kind": "unanswerable", "question": "Is there cover for vaccinations?", "answerable": false, "absent_terms": ["vaccin"]},
+    {"id": "u02", "kind": "unanswerable", "question": "Does the policy give a no-claim bonus?", "answerable": false, "absent_terms": ["bonus"]},
+    {"id": "u03", "kind": "unanswerable", "question": "Is air ambulance transport covered?", "answerable": false, "absent_terms": ["air ambulance", "helicopter"]},
+    {"id": "u04", "kind": "unanswerable", "question": "Are AYUSH or homeopathy treatments covered?", "answerable": false, "absent_terms": ["ayush", "homeopath", "ayurved"]},
+    {"id": "u05", "kind": "unanswerable", "question": "Is there a free annual health check-up?", "answerable": false, "absent_terms": ["check-up", "checkup"]},
+    {"id": "u06", "kind": "unanswerable", "question": "Are outpatient doctor consultations covered?", "answerable": false, "absent_terms": ["outpatient", "consultation"]},
+    {"id": "u07", "kind": "unanswerable", "question": "Is bariatric surgery covered?", "answerable": false, "absent_terms": ["bariatric", "obesity"]},
+    {"id": "u08", "kind": "unanswerable", "question": "What is the premium amount for a 35 year old?", "answerable": false, "absent_terms": ["premium amount", "premium of rs", "premium for"]},
+    {"id": "u09", "kind": "unanswerable", "question": "Are organ donor expenses covered?", "answerable": false, "absent_terms": ["organ", "donor"]},
+    {"id": "u10", "kind": "unanswerable", "question": "Is domiciliary hospitalisation covered?", "answerable": false, "absent_terms": ["domiciliary", "at home"]},
+    {"id": "u11", "kind": "unanswerable", "question": "Is robotic surgery covered?", "answerable": false, "absent_terms": ["robotic"]}
+  ]
+}

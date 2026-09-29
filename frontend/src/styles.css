@@ -1,0 +1,58 @@
+:root {
+  --bg: #fafafa;
+  --fg: #1d1d1f;
+  --muted: #5f6368;
+  --line: #d9dce1;
+  --card: #ffffff;
+  --accent: #1f5fbf;
+  --ok: #1e7a3c;
+  --warn: #9a6200;
+  --bad: #b3261e;
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  color: var(--fg);
+  background: var(--bg);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #16181b;
+    --fg: #e8eaed;
+    --muted: #a0a4aa;
+    --line: #34383e;
+    --card: #1f2226;
+    --accent: #7aa7f0;
+    --ok: #6cc38a;
+    --warn: #e3b35c;
+    --bad: #f28b82;
+  }
+}
+
+body { margin: 0; }
+main { max-width: 960px; margin: 0 auto; padding: 16px; }
+h1 { margin: 8px 0 4px; }
+h2 { margin: 0 0 12px; font-size: 1.15rem; }
+h3 { font-size: 1rem; margin: 16px 0 8px; }
+section { background: var(--card); border: 1px solid var(--line); border-radius: 8px; padding: 16px; margin: 16px 0; }
+label { display: flex; flex-direction: column; gap: 4px; font-size: 0.9rem; color: var(--muted); }
+input, select, button { font: inherit; padding: 6px 8px; border-radius: 6px; border: 1px solid var(--line); background: var(--card); color: var(--fg); }
+button { background: var(--accent); color: #fff; border: none; cursor: pointer; align-self: flex-end; }
+button:disabled { opacity: 0.5; cursor: default; }
+.row { display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-end; margin-bottom: 8px; }
+.grow { flex: 1 1 280px; }
+.grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; margin-bottom: 12px; }
+.muted { color: var(--muted); font-size: 0.9rem; }
+.error { color: var(--bad); }
+.chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.chip { border: 1px solid var(--line); border-radius: 999px; padding: 2px 10px; font-size: 0.8rem; }
+.chip.warn, .status.warn, .status.evidence_only, .status.manual_review, .status.llm_error { color: var(--warn); }
+.status { font-weight: 600; }
+.status.ok, .status.answered { color: var(--ok); }
+.status.insufficient_evidence { color: var(--bad); }
+.badge { display: inline-block; font-size: 0.75rem; font-weight: 700; color: var(--warn); border: 1px solid var(--warn); border-radius: 4px; padding: 1px 6px; }
+.answer { font-size: 1.05rem; }
+.citations { padding-left: 20px; }
+blockquote { margin: 4px 0 12px; padding-left: 10px; border-left: 3px solid var(--line); white-space: pre-wrap; color: var(--muted); }
+.totals { font-size: 1.05rem; }
+table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
+th, td { text-align: left; border-bottom: 1px solid var(--line); padding: 6px 4px; vertical-align: top; }
+@media (max-width: 600px) { table { display: block; overflow-x: auto; } }
