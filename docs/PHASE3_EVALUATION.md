@@ -125,9 +125,33 @@ caught deterministically. That case relies on Claude following the instruction t
   shows "Insufficient evidence" → cataract synthetic estimate ₹40,000 → coverage ₹27,000 / ₹13,000
   with rules sub_limit → deductible → copay → coverage_limit.
 
+## Real Gemini API validation
+
+After the Gemini provider was added (`LLM_PROVIDER=gemini`), the full pipeline was run against
+the **real Gemini API**. This is separate from the unit tests, which use a fake client
+(`tests/test_gemini_llm.py`, 23 tests) and never call the API.
+
+Setup: model `gemini-2.5-flash`; API server started with `uvicorn app.main:create_app --factory`;
+`EMBEDDING_PROVIDER=hashing` (keyword retrieval; see below); local-file vector store; the
+fictional demo policy (8 pages, 16 chunks); questions sent to `POST /policies/{id}/ask`.
+
+| Test | Question | Observed result |
+|---|---|---|
+| Direct | "What is the deductible for each policy year?" | `answered`: "A deductible of Rs 10,000 applies to each policy year [C1]…", cited page 4, "8. DEDUCTIBLE"; citation and figure checks passed |
+| Unsupported | "Is there cover for vaccinations?" | `insufficient_evidence`: no passage above the threshold; Gemini's rewritten query "immunization coverage" also found none; no answer, no citations |
+| Unsupported | "Are organ donor expenses covered?" | `insufficient_evidence`: keyword retrieval let an unrelated passage through (score 0.29), and Gemini replied `INSUFFICIENT_EVIDENCE` instead of inventing cover |
+| Weak evidence | "What share of each bill do I have to pay myself?" | `answered` after retry: first search scored 0.044; Gemini rewrote the query to "co-payment" (0.706); answer cited "9. CO-PAYMENT" and "8. DEDUCTIBLE", with every figure found in its cited passage |
+| Paraphrase | "How much of my own money do I spend each year before the insurance starts paying?" | `insufficient_evidence`: keyword retrieval surfaced only "3. SUM INSURED", not the deductible passage, and Gemini correctly declined. The retry only runs when no passage clears the threshold, so it did not run here |
+
+- The free-tier quota (5 requests per minute for `gemini-2.5-flash`) was hit once with HTTP 429
+  during the weak-evidence test. The app returned `llm_error` with the evidence passages, and the
+  test passed when re-run after the quota window reset.
+- This is one run on one fictional document, not an accuracy measurement.
+
 ## Not verified
 
-- The fastembed semantic model (blocked download).
-- The real Claude API (no key). The `AnthropicLLM` wrapper is unit-tested with a fake SDK
-  client; generation, rewriting and verification are tested with scripted mocks.
+- The fastembed semantic model: the Hugging Face model download was unavailable in the
+  development environment, so no semantic retrieval results exist.
+- The real Claude API (no key was available). The `AnthropicLLM` wrapper is unit-tested with a
+  fake SDK client; generation, rewriting and verification are tested with scripted mocks.
 - Any real insurance policy.

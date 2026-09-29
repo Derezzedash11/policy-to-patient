@@ -54,7 +54,7 @@ first start into `data/runtime/models/`); `pgvector` = PostgreSQL driver; `dev` 
 
 | `EMBEDDING_PROVIDER` | What it is | When to use |
 |---|---|---|
-| `fastembed` (default) | Local semantic model `BAAI/bge-small-en-v1.5`, CPU, no API key | Normal use |
+| `fastembed` (default) | Local semantic model `BAAI/bge-small-en-v1.5`, CPU, no API key | Intended semantic option (not yet validated: model download was unavailable in development) |
 | `hashing` | Deterministic feature hashing. **Lexical, not semantic** | Tests, or offline when the model can't be downloaded |
 
 Each policy is embedded **once** at upload. Vectors are stored with the embedding model's name,
@@ -111,11 +111,26 @@ uvicorn app.main:create_app --factory --reload --port 8000
 
 ## Demo (5 minutes)
 
+Validated demo configuration (the setup tested end to end with the real Gemini API; see
+`docs/PHASE3_EVALUATION.md`):
+
 ```bash
+pip install -e "backend[gemini]"
+export LLM_PROVIDER=gemini
+export GEMINI_API_KEY=<your key>        # required for generated answers; never commit it
+export GEMINI_MODEL=gemini-2.5-flash    # optional; this is the default
+export EMBEDDING_PROVIDER=hashing       # keyword retrieval; works without any model download
+
 cd backend
 python -m evaluation.demo_pdf ../data/runtime/fictional_health_shield_policy.pdf   # FICTIONAL policy
-uvicorn app.main:create_app --factory --port 8000     # add EMBEDDING_PROVIDER=hashing if offline
+uvicorn app.main:create_app --factory --port 8000
 ```
+
+`EMBEDDING_PROVIDER=fastembed` (the default) is the intended semantic retrieval option, but it
+needs `pip install -e "backend[embeddings]"` and a Hugging Face model download on first start,
+and it has **not been validated** yet: the download was unavailable in the development
+environment. With `hashing`, reworded questions are the weak spot (see the evaluation doc). Without a `GEMINI_API_KEY`, the app still runs and shows evidence passages
+instead of generated answers.
 
 Open http://localhost:8000/ui/ and:
 
@@ -127,8 +142,9 @@ Open http://localhost:8000/ui/ and:
    insurer ₹27,000, you ₹13,000, with each rule shown.
 6. Stop and restart the API: the policy is still listed and is not re-embedded.
 
-With `ANTHROPIC_API_KEY` set, step 2 returns a Claude-written answer; a figure Claude states
-that is not in the cited passage sends the answer to **manual review** instead.
+With an LLM key set (`GEMINI_API_KEY` as above, or `ANTHROPIC_API_KEY`), step 2 returns a generated
+answer; a figure the LLM states that is not in the cited passage sends the answer to **manual
+review** instead. Only the Gemini path has been tested against a real API.
 
 ## Run the tests
 
